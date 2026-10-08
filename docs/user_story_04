@@ -1,0 +1,8 @@
+User-04 As a user, I want the robot to be able to grab my items from my order and store them for my delivery. 
+
+ 
+Acceptance Criteria: 
+-The robot should be able to utilize its’ mechanical arm and grab an object using a claw, magnet system, or some other tool 
+-The arm should be able to grab an item and place it down  
+-The robot should be able to drop an object at any moment in the situation it has grabbed a wrong or incorrect item 
+-The item acquired by the robot should be stored in a container either on the robot, connected to the robot, or placed somewhere within its rang
