@@ -1,0 +1,6 @@
+User-03 As a user, I want to be able to drive the robot physically through a controller while also having the ability to do it automatically based on received orders. 
+
+Acceptance Criteria: 
+- A user can move the robot with either a physical controller or a controller on an electronic device such as their phone or laptop. 
+- The robot should be able to receive a command and then move according to that command without a user’s physical interaction with a controller to move it. 
+- The robot should be able to reach the location to which it should travel and maneuver to that location automatically 
