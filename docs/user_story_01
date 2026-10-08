@@ -1,0 +1,7 @@
+User-01 As a user, I want to select ping pong ball colors and quantities on a web page and submit my order so that my order is validated and saved in the database.
+
+Acceptance Criteria:
+-A user can view color selection options and set quantities for each color on the order page.
+-The web form prevents submitting invalid entries through empty orders, negative counts, or quantities exceeding storage limits.
+-Submitting the form writes a new record into the database with a status of QUEUED.
+-The web page displays an order confirmation screen with the order summary without page load errors.

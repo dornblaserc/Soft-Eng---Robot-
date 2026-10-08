@@ -1,0 +1,7 @@
+User-02 As a user, I want the system to automatically send my order and direct the robot to the appropriate bins, so that my selected items are retrieved without manual input.
+
+Acceptance Criteria:
+-The system automatically tracks the robot starting a pending order, updating the visible order status to IN_PROGRESS.
+-The mobile robot autonomously drives to and identifies the exact bin locations based on the customer's selected ball colors.
+-The robot navigates between multiple color stations in the order until all requested item locations have been visited.
+-If a path is blocked, the system flags the order with an error status and alerts operations instead of stalling indefinitely.
