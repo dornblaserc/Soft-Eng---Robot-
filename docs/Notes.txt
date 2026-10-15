@@ -1,0 +1,6 @@
+10/15
+-280m5.py is a starter script that powers on the robot, powers on the arm, moves the arm to a 
+home position and moves it to a custom position. It then returns the rm to home position and powers off.
+-exhibition_bejing.py is a looping script that waves the arm back and forth until the user ends the programming
+-yanliang.py is a pick and place simulation that moves to a specific coordinate, picks up an item, moves to 
+a specific drop location, and drops.
