@@ -28,9 +28,22 @@
                 <li class="nav-item">
                     <a href="order.php" class="nav-link">Order</a>
                 </li>
-                <li class="nav-item">
-                    <a href="profile.php" class="nav-link profile-btn">Profile</a>
-                </li>
+
+                <?php if (isLoggedIn()): ?>
+                    <li class="nav-item">
+                        <a href="profile.php" class="nav-link profile-btn">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="post" action="logout.php" style="display:inline">
+                            <button type="submit" class="nav-link">Logout</button>
+                        </form>
+                    </li>
+                <?php else: ?>
+                    <li class="nav-item">
+                        <a href="login.php" class="nav-link profile-btn">Login</a>
+                    </li>
+                <?php endif; ?>
+
             </ul>
 
         </nav>

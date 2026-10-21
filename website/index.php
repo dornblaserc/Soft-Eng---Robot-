@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../includes/bootstrap.php';
+
 $pageTitle = 'Home - Etown Robotic Delivery Systems';
 include 'Classes/header.php';
 ?>
