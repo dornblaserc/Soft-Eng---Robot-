@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from pymycobot.mycobot import MyCobot
+from pymycobot import MyCobot280
 import time
 
 
 if __name__== "__main__":
-    mc = MyCobot("/dev/ttyACM0", 115200)
+    mc = MyCobot280("/dev/ttyACM0", 115200)
 
     def point_orin():
         mc.send_angles([91.66, 122.78, -143.26, -19.07, -4.21, -43.59],30)    #收缩机械臂
