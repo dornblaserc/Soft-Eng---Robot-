@@ -17,4 +17,13 @@ time.sleep(3)
 mc.send_angles([0,0,0,0,0,0,], 30) #return to start
 time.sleep(3)
 
+mc.set_gripper_state(0, 30) #activates gripper
+time.sleep(3)
+
+mc.set_gripper_value(100, 30) #100 = full open, 2nd ## = speed
+time.sleep(3)
+
+mc.set_gripper_value(0, 30) #0 = full close, 2nd ## = speed
+time.sleep(3)
+
 print(mc.get_angles()) #returns arm's current positions
