@@ -18,6 +18,18 @@ pip install tkFileDialog\
 pip install Tkinter\
 pip install Movement\
 
+echo $ROS_DISTRO
+
+source /opt/ros/humble/setup.bash
+
+sudo apt update
+sudo apt install ros-humble-geometry-msgs
+
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+sudo apt update && sudo apt install ros-humble-rclpy ros-humble-geometry-msgs -y
+
 # Mobile App
 AgileX in the App Store
 
