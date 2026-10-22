@@ -4,31 +4,31 @@
 
 git clone "https://github.com/dornblaserc/Soft-Eng---Robot-"
 
-pip install Pointfloat\
-pip install cv2\
-pip install numpy as np\
-pip install time\
-pip install json\
-pip install os\
-pip install rospy\
-pip install Marker\
-pip install Image\
-pip install Thread\
-pip install tkFileDialog\
-pip install Tkinter\
-pip install Movement\
+pip install Pointfloat
+pip install cv2
+pip install numpy as np
+pip install time
+pip install json
+pip install os
+pip install rospy
+pip install Marker
+pip install Image
+pip install Thread
+pip install tkFileDialog
+pip install Tkinter
+pip install Movement
 
-echo $ROS_DISTRO
+echo $ROS_DISTRO\
 
-source /opt/ros/humble/setup.bash
+source /opt/ros/humble/setup.bash\
 
-sudo apt update
-sudo apt install ros-humble-geometry-msgs
+sudo apt update\
+sudo apt install ros-humble-geometry-msgs\
 
-echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-source ~/.bashrc
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc\
+source ~/.bashrc\
 
-sudo apt update && sudo apt install ros-humble-rclpy ros-humble-geometry-msgs -y
+sudo apt update && sudo apt install ros-humble-rclpy ros-humble-geometry-msgs -y\
 
 # Mobile App
 AgileX in the App Store
