@@ -98,12 +98,12 @@ def doPush(mc):
    mc.send_angles(neutral, 50)
    time.sleep(delay)
 
-mc = MyCobot('/dev/ttyAMA0',1000000)
+mc = MyCobot('/dev/ttyACM0',115200)
 # User names and passwords for db connection
-dbuser="u413142534_robotworks"
-dbpwd="two1x/Y9"
+dbuser="u413142534_rds"
+dbpwd="w7yKL456!"
 dbaddress="srv557.hstgr.io"
-dbname="u413142534_robotworksdb"
+dbname="u413142534_rdsdb"
 #make connection
 cnx = mysql.connector.connect(user=dbuser, password=dbpwd,
                               host=dbaddress,
