@@ -23,3 +23,6 @@ AgileX in the App Store
 
 # Password
 agx
+
+# VSCode
+If on the robot's vscode you need to press the run button twice
