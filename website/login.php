@@ -30,6 +30,15 @@ include __DIR__ . '/Classes/header.php';
     <p style="color:red"><?= htmlspecialchars($error) ?></p>
 <?php endif; ?>
 
+<style>
+
+form {
+margin: 50px;
+}
+
+</style>
+
+
 <form method="post" action="login.php">
     <label>Username <input type="text" name="username" required></label><br>
     <label>Password <input type="password" name="password" required></label><br>
