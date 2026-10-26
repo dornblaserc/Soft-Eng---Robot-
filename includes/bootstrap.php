@@ -29,10 +29,10 @@ function requireLoginPage() {
 function requireRobotKey(): void {
     global $robotApiKey;
     $sent = $_SERVER['HTTP_X_API_KEY'] ?? '';
-    if (!hash_equals($robotApiKey, $sent)) {
+    $expected = isset($robotApiKey) ? (string) $robotApiKey : '';
+    if ($expected === '' || !hash_equals($expected, $sent)) {
         http_response_code(401);
         header('Content-Type: application/json');
-        echo json_encode(['error' => 'unauthorized']);
         exit;
     }
 }

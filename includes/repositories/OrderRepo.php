@@ -82,4 +82,49 @@ public static function splitActiveAndHistory(array $orders) {
     }
     return [$active, $history];
 }
+
+    public static function getFirstByStatus($status) {
+        $rows = RDSdb::getDataFromSQL(
+            "SELECT orderID, status, userID FROM `Order`
+             WHERE status = ? ORDER BY orderID ASC LIMIT 1",
+            [$status]
+        );
+        return $rows ? $rows[0] : null;
+    }
+ 
+    public static function getById($orderID) {
+        $rows = RDSdb::getDataFromSQL(
+            "SELECT orderID, status, userID FROM `Order` WHERE orderID = ?",
+            [$orderID]
+        );
+        return $rows ? $rows[0] : null;
+    }
+ 
+    public static function setStatus($orderID, $status) {
+        return RDSdb::executeSQL(
+            "UPDATE `Order` SET status = ? WHERE orderID = ?",
+            [$status, $orderID]
+        );
+    }
+ 
+    // Items for one order, with the Location the robot drives to
+    public static function getItems($orderID) {
+        $rows = RDSdb::getDataFromSQL(
+            "SELECT i.productID, i.Location, i.height, i.width, n.details AS instruction
+             FROM `Item Orders` io
+             JOIN Items i ON i.productID = io.productID
+             LEFT JOIN Instructions n ON n.instructionID = i.instructionID
+             WHERE io.orderID = ?
+             ORDER BY i.productID",
+            [$orderID]
+        );
+        // Make sure numbers are numbers in the JSON
+        foreach ($rows as &$r) {
+            $r['productID'] = (int) $r['productID'];
+            $r['height']    = (int) $r['height'];
+            $r['width']     = (int) $r['width'];
+        }
+        unset($r);
+        return $rows;
+    }
 }
