@@ -28,4 +28,4 @@ done
 echo "Base driver active."
 
 echo "[3/3] Running execution sequence..."
-python3 src/Tests/in_progress/drive.py
+python3 src/Tests/in_progress/main.py
