@@ -1,11 +1,10 @@
 from pymycobot import MyCobot280
 import time
 
-mc = MyCobot280("/dev/ttyACM0",115200)
-#^ sets arm to ms variable
-#dev/#### will have the # be different for each arm
-class StartGrab:
-    
+def start_grab(port="/dev/ttyACM0", baudrate=115200):
+        mc = MyCobot280(port, baudrate)
+        #^ sets arm to ms variable
+        #dev/#### will have the # be different for each arm
         mc.power_on() #activates arm
         time.sleep(1)
         mc.set_gripper_state(0, 50) #activates gripper
@@ -33,3 +32,6 @@ class StartGrab:
 
         mc.set_gripper_value(100, 50) #100 = full open, 2nd ## = speed
         time.sleep(3)
+
+if __name__ == "__main__":
+  start_grab()
