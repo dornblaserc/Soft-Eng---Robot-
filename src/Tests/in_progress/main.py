@@ -1,25 +1,14 @@
-from arm_controller import ArmController
 from robot_base import LimoBase
 import rospy
 
 
 def main():
-  rospy.init_node("limo_pickup_sequence", anonymous=True)
-
-  arm = ArmController(port="/dev/ttyACM0")
+  rospy.init_node("limo_movement_test", anonymous=True)
   base = LimoBase()
 
-  # 1. Prepare arm
-  arm.tuck()
-  arm.set_gripper(state=0)  # Open
-
-  # 2. Drive to ball (distance in meters)
+  rospy.loginfo("Starting movement test: driving forward 0.3m at 0.1 m/s...")
   base.drive_forward(distance=0.3, speed=0.1)
-
-  # 3. Grasp and lift
-  arm.reach_pickup()
-  arm.set_gripper(state=1)  # Close
-  arm.tuck()
+  rospy.loginfo("Movement test complete.")
 
 
 if __name__ == "__main__":
