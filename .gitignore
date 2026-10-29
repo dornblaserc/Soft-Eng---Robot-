@@ -1,3 +1,5 @@
 includes/config.php
 test_robot.py
 src/Tests/in_progress/__pycache__
+src/robot_config.py
+src/robot.py
