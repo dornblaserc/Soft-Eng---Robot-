@@ -10,7 +10,7 @@ if (!function_exists('renderOrdersTable')) {
                     <td>#<?= (int) $o['orderID'] ?></td>
                     <td>
                         <?php foreach ($o['items'] as $it): ?>
-                            Item <?= (int) $it['productID'] ?> (<?= htmlspecialchars($it['Location']) ?>)<br>
+                            Item <?= (int) $it['productID'] ?><br>
                         <?php endforeach; ?>
                     </td>
                     <td><?= htmlspecialchars($o['status']) ?></td>
