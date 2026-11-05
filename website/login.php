@@ -25,25 +25,30 @@ $pageTitle = 'Login - Etown Robotic Delivery Systems';
 include __DIR__ . '/Classes/header.php';
 ?>
 
-<h2>Login</h2>
-<?php if ($error): ?>
-    <p style="color:red"><?= htmlspecialchars($error) ?></p>
-<?php endif; ?>
+<link rel="stylesheet" href="Styles/login.css?v=1">
 
-<style>
+<div class="auth-page">
+    <div class="auth-card">
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">Log in to place and track your orders.</p>
 
-form {
-margin: 50px;
-}
+        <?php if ($error): ?>
+            <div class="auth-error"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
 
-</style>
+        <form method="post" action="login.php" class="auth-form">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" autocomplete="username"
+                   value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required autofocus>
 
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
 
-<form method="post" action="login.php">
-    <label>Username <input type="text" name="username" required></label><br>
-    <label>Password <input type="password" name="password" required></label><br>
-    <button type="submit">Log in</button>
-</form>
-<p>No account yet? <a href="register.php">Register</a></p>
+            <button type="submit" class="auth-button">Log in</button>
+        </form>
+
+        <p class="auth-footer">No account yet? <a href="register.php">Register</a></p>
+    </div>
+</div>
 
 <?php include __DIR__ . '/Classes/footer.php'; ?>

@@ -28,6 +28,8 @@ $pageTitle = 'Register - Etown Robotic Delivery Systems';
 include __DIR__ . '/Classes/header.php';
 ?>
 
+<link rel="stylesheet" href="Styles/order.css?v=1>
+
 <h2>Create an Account</h2>
 <?php if ($error): ?>
     <p style="color:red"><?= htmlspecialchars($error) ?></p>

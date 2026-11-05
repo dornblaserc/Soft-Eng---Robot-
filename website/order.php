@@ -35,7 +35,7 @@ $pageTitle = 'Order - Etown Robotic Delivery Systems';
 include __DIR__ . '/Classes/header.php';
 ?>
 
-<link rel="stylesheet" href="order.css?v=1">
+<link rel="stylesheet" href="Styles/order.css?v=1">
 
 <div class="page">
 
