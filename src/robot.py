@@ -33,6 +33,9 @@ def drive_to_box1():
 def drive_to_box2():
     print("    [robot] driving to box2")
 
+def drive_to_box3():
+    print("    [robot] driving to box3")
+
 
 def arm_pick():
     print("    [robot] arm: picking up item")
@@ -46,6 +49,7 @@ def drive_to_dropoff():
 LOCATIONS = {
     "box1": drive_to_box1,
     "box2": drive_to_box2,
+    "box3": drive_to_box3
 }
 
 
