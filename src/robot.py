@@ -33,6 +33,7 @@ def drive_to_box1():
 def drive_to_box2():
     print("    [robot] driving to box2")
 
+
 def drive_to_box3():
     print("    [robot] driving to box3")
 
