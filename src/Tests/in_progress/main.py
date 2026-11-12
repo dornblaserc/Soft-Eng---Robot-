@@ -13,7 +13,15 @@ from arm_controller import ArmController
 from robot_base import LimoBase
 import rospy
 from vision_detector import BallDetector
- 
+
+import subprocess
+
+# Runs the script and waits for it to finish
+result = subprocess.run(["bash", "src/Tests/in_progress/setup.sh"], capture_output=True, text=True)
+
+print("Output:", result.stdout)
+print("Errors:", result.stderr)
+
 # Physical mounting offset (dx, dy, dz) in millimeters from the center of the
 # MyCobot base to the Orbbec camera lens:
 #   dx (+X): How many mm the camera lens sits in front of the arm base center (e.g. 80.0 mm)
