@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-from Tests.grableft import start_grab
-=======
 """
 File: main.py
 Description:
@@ -13,11 +10,10 @@ Description:
 """
 
 from arm_controller import ArmController
->>>>>>> dd1aa8534d39ef1713816d9f6c39ee04abf47eef
 from robot_base import LimoBase
 import rospy
 from vision_detector import BallDetector
-
+ 
 # Physical mounting offset (dx, dy, dz) in millimeters from the center of the
 # MyCobot base to the Orbbec camera lens:
 #   dx (+X): How many mm the camera lens sits in front of the arm base center (e.g. 80.0 mm)
