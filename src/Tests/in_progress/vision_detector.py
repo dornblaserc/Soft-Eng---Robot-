@@ -26,7 +26,7 @@ from ultralytics import YOLO
 class BallDetector:
   """Subscribes to RGB-D camera streams and computes 3D pick coordinates for the topmost ball."""
 
-  def __init__(self, model_path="ping_pong_seg.pt", target_class_id=0):
+  def __init__(self, model_path="best.pt", target_class_id=0):
     """Initializes the YOLO model and ROS camera subscribers.
 
     Args:
