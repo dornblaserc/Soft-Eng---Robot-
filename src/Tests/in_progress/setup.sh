@@ -46,4 +46,4 @@ done
 echo "Drivers active."
 
 echo "[4/4] Running execution sequence..."
-python3 src/Tests/in_progress/drive.py
+python3 src/Tests/in_progress/main.py
