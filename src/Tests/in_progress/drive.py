@@ -1,4 +1,5 @@
 from robot_base import LimoBase
+from turn import RobotTurn
 import rospy
 
 
@@ -7,10 +8,10 @@ def main():
   base = LimoBase()
 
   rospy.loginfo("Starting movement test: driving forward 0.3m at 0.1 m/s...")
-  base.drive_forward(distance=0.3, speed=0.1)
+  base.drive_forward(distance=0.2, speed=0.1)
+  RobotTurn.turn(duration=5,turn_rate=10,linear_x=2.0,angular_z=0.5)
   rospy.loginfo("Movement test complete.")
-
-
+  
 if __name__ == "__main__":
   try:
     main()

@@ -9,25 +9,14 @@ print("Releasing servos... The arm will go limp.")
 mc.release_all_servos()
 
 input(
-    "1. Manually move the arm into the TUCKED pose.\nPress Enter when ready..."
+    "Place a ball in the pickup zone, manually position the gripper around it,\n"
+    "and press Enter..."
 )
-tuck_angles = mc.get_angles()
-print(f"TUCK_POSE = {tuck_angles}\n")
-
-input(
-    "2. Place the ball in front of the LIMO bumper.\n"
-    "   Manually position the gripper around the ball.\n"
-    "Press Enter when ready..."
-)
-pickup_angles = mc.get_angles()
-print(f"PICKUP_POSE = {pickup_angles}\n")
-
-# Re-lock servos to hold position
 mc.focus_all_servos()
-print("Servos locked. Calibration complete.")
+time.sleep(1)
 
-'''
-replace lines 12 to 14 in arm_controller.py
-with the output from running python3 teach_angles.py
-'''
-
+coords = mc.get_coords()
+angles = mc.get_angles()
+print(f"Recorded Angles: {angles}")
+print(f"Recorded Coords [X, Y, Z, Rx, Ry, Rz]: {coords}")
+print(f"Use GRIP_ORIENTATION = {coords[3:]} in arm_controller.py")
