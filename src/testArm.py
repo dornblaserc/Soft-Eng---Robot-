@@ -2,9 +2,6 @@ from pymycobot import MyCobot280
 import time
 
 """
-
-This file was made to initially test the arms functionality in a simple movement pattern
-
 mc = MyCobot280("COM3", 115200)
 time.sleep(2)
 

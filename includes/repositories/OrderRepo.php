@@ -110,7 +110,7 @@ public static function splitActiveAndHistory(array $orders) {
     // Items for one order, with the Location the robot drives to
     public static function getItems($orderID) {
         $rows = RDSdb::getDataFromSQL(
-            "SELECT i.productID,i.name,  i.Location, i.height, i.width, n.details AS instruction
+            "SELECT i.productID, i.Location, i.height, i.width, n.details AS instruction
              FROM `Item Orders` io
              JOIN Items i ON i.productID = io.productID
              LEFT JOIN Instructions n ON n.instructionID = i.instructionID

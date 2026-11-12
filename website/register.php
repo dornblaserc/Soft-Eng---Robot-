@@ -28,32 +28,16 @@ $pageTitle = 'Register - Etown Robotic Delivery Systems';
 include __DIR__ . '/Classes/header.php';
 ?>
 
-<link rel="stylesheet" href="Styles/login.css?v=1">
+<h2>Create an Account</h2>
+<?php if ($error): ?>
+    <p style="color:red"><?= htmlspecialchars($error) ?></p>
+<?php endif; ?>
 
-<div class="auth-page">
-    <div class="auth-card">
-        <h2 class="auth-title">Create an account</h2>
-        <p class="auth-subtitle">Register to place and track your orders.</p>
-
-        <?php if ($error): ?>
-            <div class="auth-error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-
-        <form method="post" action="register.php" class="auth-form">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" maxlength="45"
-                   autocomplete="username"
-                   value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required autofocus>
-
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" minlength="8"
-                   autocomplete="new-password" required>
-
-            <button type="submit" class="auth-button">Register</button>
-        </form>
-
-        <p class="auth-footer">Already have an account? <a href="login.php">Log in</a></p>
-    </div>
-</div>
+<form method="post" action="register.php">
+    <label>Username <input type="text" name="username" required></label><br>
+    <label>Password <input type="password" name="password" required></label><br>
+    <button type="submit">Register</button>
+</form>
+<p>Already have an account? <a href="login.php">Log in</a></p>
 
 <?php include __DIR__ . '/Classes/footer.php'; ?>
