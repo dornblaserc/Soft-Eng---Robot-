@@ -12,23 +12,23 @@ time.sleep(3)
 
 #Lines 15-18 reset the arm to a default position
 mc.set_gripper_value(0, 50) #0 = full close, 2nd ## = speed
-mc.send_angles([0,0,0,0,0,0,], 30) #return to start (for this file)
+mc.send_angles([0,0,0,0,0,0,], 50) #return to start (for this file)
 time.sleep(5)
 
 mc.set_gripper_value(100, 50) #100 = full open, 2nd ## = speed
 time.sleep(3)
 
-mc.send_angles([14,0,0,0,80,0], 30) #servo 1 and 5
+mc.send_angles([14,0,0,0,135,0], 50) #servo 1 and 5
 time.sleep(3)
 
-mc.send_angles([14,140,-35,-15,40,0], 30) #servo 2,3,4
+mc.send_angles([14,140,-25,-15,135,0], 50) #servo 2,3,4
 time.sleep(3)
 
 mc.set_gripper_value(15, 50) #100 = full open, 2nd ## = speed
 time.sleep(3)
 
-mc.send_angles([5,-110,25,0,-45,0,], 30) #place in box
-time.sleep(10)
+mc.send_angles([5,-110,25,0,-45,0,], 50) #place in box
+time.sleep(4)
 
 mc.set_gripper_value(100, 50) #100 = full open, 2nd ## = speed
 time.sleep(3)
