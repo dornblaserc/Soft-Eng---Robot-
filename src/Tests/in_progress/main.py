@@ -51,7 +51,7 @@ def main():
   # Instantiate hardware controllers and the vision pipeline
   base = LimoBase()
   arm = ArmController(port="/dev/ttyACM0")
-  detector = BallDetector(model_path="ping_pong_seg.pt", target_class_id=0)
+  detector = BallDetector(model_path="best.pt", target_class_id=0)
 
   # 1. Tuck the arm so it does not obstruct the depth camera while approaching
   rospy.loginfo("Folding arm into safe transit pose...")
