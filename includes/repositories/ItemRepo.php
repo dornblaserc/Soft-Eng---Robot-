@@ -2,7 +2,7 @@
 class ItemRepository {
     public static function getAll(): array {
         return RDSdb::getDataFromSQL(
-            "SELECT i.productID, i.Location, i.height, i.width, i.quantity, n.details
+            "SELECT i.productID, i.name, i.Location, i.height, i.width, i.quantity, n.details
              FROM Items i
              LEFT JOIN Instructions n ON n.instructionID = i.instructionID");
     }

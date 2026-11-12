@@ -6,15 +6,16 @@ $error   = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $itemID = (int) ($_POST['itemID'] ?? 0);
-    $item   = ItemRepository::getById($itemID);
+    $rawID  = $_POST['itemID'] ?? '';
+    $itemID = (int) $rawID;
+    $item   = ($rawID === '') ? null : ItemRepository::getById($itemID);
 
-    if ($itemID <= 0 || !$item) {
+    if ($rawID === '' || $itemID < 0 || !$item) {
         $error = 'Please select a valid item.';
     } else {
         try {
             $orderID = OrderRepository::create((int) $_SESSION['userID'], [$itemID]);
-            header('Location: order.php?success=' . $orderID);   // avoids double submit on refresh
+            header('Location: order.php?success=' . $orderID);
             exit;
         } catch (Exception $e) {
             $error = 'Could not place your order. Please try again.';
@@ -34,33 +35,45 @@ $pageTitle = 'Order - Etown Robotic Delivery Systems';
 include __DIR__ . '/Classes/header.php';
 ?>
 
-<h2>Place an Order</h2>
+<link rel="stylesheet" href="Styles/order.css?v=1">
 
-<?php if ($error !== ''): ?>
-    <p style="color: red;"><?= htmlspecialchars($error) ?></p>
-<?php endif; ?>
+<div class="page">
 
-<?php if ($success !== ''): ?>
-    <p style="color: green;"><?= htmlspecialchars($success) ?></p>
-<?php endif; ?>
+    <h2 class="page-title">Place an Order</h2>
+    <p class="page-subtitle">Choose an item and our robot will deliver it.</p>
 
-<form method="POST" action="order.php">
-    <label for="itemID">Select an item:</label>
-    <select class="form-select" id="itemID" name="itemID" required>
-        <option value="">Select an item</option>
-        <?php foreach ($items as $item): ?>
-            <option value="<?= (int) $item['productID'] ?>">
-                Item <?= (int) $item['productID'] ?> - <?= htmlspecialchars($item['Location']) ?>
-                <?php if (!empty($item['details'])): ?>
-                    (<?= htmlspecialchars($item['details']) ?>)
-                <?php endif; ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <button type="submit" name="place_order">Place Order</button>
-</form>
+    <?php if ($error !== ''): ?>
+        <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
 
+    <?php if ($success !== ''): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
 
-<?php include __DIR__ . '/Classes/orders_list.php'; ?>
+    <section class="card">
+        <form method="POST" action="order.php" class="order-form">
+            <label for="itemID">Select an item</label>
+            <div class="form-row">
+                <select class="form-select" id="itemID" name="itemID" required>
+                    <option value="">Choose an item...</option>
+                    <?php foreach ($items as $item): ?>
+                        <option value="<?= (int) $item['productID'] ?>">
+                            <?= htmlspecialchars($item['name']) ?>
+                            <?php if (!empty($item['details'])): ?>
+                                (<?= htmlspecialchars($item['details']) ?>)
+                            <?php endif; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" name="place_order" class="btn-primary">Place Order</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <?php include __DIR__ . '/Classes/orders_list.php'; ?>
+    </section>
+
+</div>
 
 <?php include __DIR__ . '/Classes/footer.php'; ?>
