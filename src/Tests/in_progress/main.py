@@ -14,13 +14,7 @@ from robot_base import LimoBase
 import rospy
 from vision_detector import BallDetector
 
-import subprocess
-
-# Runs the script and waits for it to finish
-result = subprocess.run(["bash", "src/Tests/in_progress/setup.sh"], capture_output=True, text=True)
-
-print("Output:", result.stdout)
-print("Errors:", result.stderr)
+import os
 
 # Physical mounting offset (dx, dy, dz) in millimeters from the center of the
 # MyCobot base to the Orbbec camera lens:
@@ -59,10 +53,15 @@ def main():
   # Instantiate hardware controllers and the vision pipeline
   base = LimoBase()
   arm = ArmController(port="/dev/ttyACM0")
-  detector = BallDetector(model_path="best.pt", target_class_id=0)
+  detector = BallDetector(model_path="/home/agilex/limo_ros2_ws/src/Soft-Eng---Robot-/best.pt", target_class_id=0)
 
   # 1. Tuck the arm so it does not obstruct the depth camera while approaching
+ 
+  rospy.loginfo("Loading YOLO Model...")
+  script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  model_file = os.path.join(script_dir,"/home/agilex/limo_ros2_ws/src/Soft-Eng---Robot-/best.pt")
   rospy.loginfo("Folding arm into safe transit pose...")
+  detector = BallDetector(model_path=model_file, target_class_id=0)
   arm.reset_and_tuck()
 
   # 2. Drive the LIMO forward to the bin

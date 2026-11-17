@@ -36,4 +36,4 @@ done
 echo "Camera driver active."
 
 echo "[4/4] Running execution sequence..."
-python3 "$SCRIPT_DIR/main.py"
+YOLO_OFFLINE=1 python3 -u "$SCRIPT_DIR/main.py"

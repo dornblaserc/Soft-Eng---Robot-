@@ -1,5 +1,5 @@
-"""
-File: vision_detector.py
+#!/usr/bin/env python3
+"""File: vision_detector.py
 Description:
   Detects ping pong balls in a bin using a YOLO instance segmentation model and
   an Orbbec DaBai RGB-D depth camera.
@@ -26,28 +26,28 @@ from ultralytics import YOLO
 class BallDetector:
   """Subscribes to RGB-D camera streams and computes 3D pick coordinates for the topmost ball."""
 
-def __init__(self, model_path="best.pt", target_class_id=0):
-  self.bridge = CvBridge()
-  self.model = YOLO(model_path, task="segment")
-  self.target_class_id = target_class_id
+  def __init__(self, model_path="/home/agilex/limo_ros2_ws/src/Soft-Eng---Robot-/best.pt", target_class_id=0):
+    self.bridge = CvBridge()
+    self.model = YOLO(model_path)
+    self.target_class_id = target_class_id
 
-  self.intrinsics = None
-  self.latest_target_cam_mm = None
+    self.intrinsics = None
+    self.latest_target_cam_mm = None
 
-  # Auto-detect whether the driver publishes to /camera/color or /camera/rgb
-  published = [t[0] for t in rospy.get_published_topics()]
-  cam_ns = "/camera/color" if "/camera/color/image_raw" in published else "/camera/rgb"
+    # Auto-detect whether the driver publishes to /camera/color or /camera/rgb
+    published = [t[0] for t in rospy.get_published_topics()]
+    cam_ns = "/camera/color" if "/camera/color/image_raw" in published else "/camera/rgb"
 
-  self.info_sub = rospy.Subscriber(
-      f"{cam_ns}/camera_info", CameraInfo, self._info_cb
-  )
-  self.color_sub = message_filters.Subscriber(f"{cam_ns}/image_raw", Image)
-  self.depth_sub = message_filters.Subscriber("/camera/depth/image_raw", Image)
+    self.info_sub = rospy.Subscriber(
+        f"{cam_ns}/camera_info", CameraInfo, self._info_cb
+    )
+    self.color_sub = message_filters.Subscriber(f"{cam_ns}/image_raw", Image)
+    self.depth_sub = message_filters.Subscriber("/camera/depth/image_raw", Image)
 
-  self.ts = message_filters.ApproximateTimeSynchronizer(
-      [self.color_sub, self.depth_sub], queue_size=10, slop=0.05
-  )
-  self.ts.registerCallback(self._synced_cb)
+    self.ts = message_filters.ApproximateTimeSynchronizer(
+        [self.color_sub, self.depth_sub], queue_size=10, slop=0.05
+    )
+    self.ts.registerCallback(self._synced_cb)
 
   def _info_cb(self, msg):
     """Extracts lens focal lengths and optical center from the 3x3 intrinsic matrix K.
@@ -111,7 +111,7 @@ def __init__(self, model_path="best.pt", target_class_id=0):
       # Extract a 3x3 pixel window around (u, v) from the depth image.
       # Taking the median of non-zero pixels prevents a single dead depth pixel
       # from ruining the distance reading.
-      patch = depth_frame[max(0, v - 1):min(h, v + 2), max(0, u - 1):min(w, u + 2)]
+      patch = depth_frame[max(0, v - 1) : min(h, v + 2), max(0, u - 1) : min(w, u + 2)]
       valid = patch[patch > 0]
       if len(valid) == 0:
         continue
@@ -146,13 +146,13 @@ def __init__(self, model_path="best.pt", target_class_id=0):
     """Converts 3D Camera Optical coordinates into 3D MyCobot Base coordinates.
 
     Coordinate Axis Mapping:
-      * Camera Optical Frame: +Z = Forward, +X = Right, +Y = Down
-      * MyCobot Base Frame:   +X = Forward, +Y = Left,  +Z = Up
+      - Camera Optical Frame: +Z = Forward, +X = Right, +Y = Down
+      - MyCobot Base Frame:   +X = Forward, +Y = Left,  +Z = Up
 
     Therefore:
-      * Arm Forward (+X_arm) corresponds to Camera Depth (+Z_cam)
-      * Arm Left    (+Y_arm) corresponds to negative Camera Right (-X_cam)
-      * Arm Up      (+Z_arm) corresponds to negative Camera Down (-Y_cam)
+      - Arm Forward (+X_arm) corresponds to Camera Depth (+Z_cam)
+      - Arm Left    (+Y_arm) corresponds to negative Camera Right (-X_cam)
+      - Arm Up      (+Z_arm) corresponds to negative Camera Down (-Y_cam)
 
     Args:
       cam_to_arm_offset_mm (tuple): Physical (dx, dy, dz) mounting position of the
