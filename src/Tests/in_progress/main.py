@@ -11,7 +11,7 @@ Description:
 import math
 from arm_controller import ArmController
 import cv2
-from robot_base import LimoBase
+from Tests.in_progress.robot_base import LimoBase
 import rospy
 from vision_detector import BallDetector
 

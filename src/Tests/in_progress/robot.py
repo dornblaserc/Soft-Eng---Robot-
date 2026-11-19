@@ -21,20 +21,11 @@ import rospy
 
 from robot_config import API, API_KEY, POLL_SECONDS
 
-<<<<<<< HEAD
-import subprocess
-
-# Runs the script and waits for it to finish
-result = subprocess.run(["bash", "src/Tests/in_progress/setup.sh"], capture_output=True, text=True)
-
-print("Output:", result.stdout)
-print("Errors:", result.stderr)
-
-=======
 from robot_base import LimoBase
+rospy.init_node("limo_pickup_sequence", anonymous=True)
 
 base = LimoBase()
->>>>>>> 3dff403 (trying to move robot with orders)
+
 HEADERS = {"X-API-Key": API_KEY}
 TIMEOUT = 10  # seconds
 

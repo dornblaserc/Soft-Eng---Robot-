@@ -1,4 +1,4 @@
-from robot_base import LimoBase
+from Tests.in_progress.robot_base import LimoBase
 from turn import RobotTurn
 import rospy
 

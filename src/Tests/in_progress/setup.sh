@@ -35,5 +35,5 @@ until rostopic list 2>/dev/null | grep -Eq "/camera/(rgb|color)/image_raw"; do
 done
 echo "Camera driver active."
 
-echo "[4/4] Running execution sequence..."
-python3 -u "$SCRIPT_DIR/main.py"
+# echo "[4/4] Running execution sequence..."
+python3 -u "src/Tests/in_progress/main.py"
