@@ -139,7 +139,7 @@ def main():
 
   base = LimoBase()
   arm = ArmController(port="/dev/ttyACM0")
-  detector = BallDetector(color="blue")
+  detector = BallDetector(color="orange")
 
   rospy.loginfo("Folding arm into safe transit pose...")
   arm.reset_and_tuck()

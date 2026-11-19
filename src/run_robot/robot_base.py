@@ -35,7 +35,7 @@ class LimoBase:
     end_time = rospy.Time.now() + rospy.Duration(duration)
     rate = rospy.Rate(20)
     while not rospy.is_shutdown() and rospy.Time.now() < end_time:
-      self.set_velocity(linear_x=speed, angular_z=0.0)
+      self.set_velocity(linear_x=speed, angular_z=-0.01)
       rate.sleep()
     self.stop()
 
@@ -46,6 +46,6 @@ class LimoBase:
     end_time = rospy.Time.now() + rospy.Duration(duration)
     rate = rospy.Rate(20)
     while not rospy.is_shutdown() and rospy.Time.now() < end_time:
-      self.set_velocity(linear_x=-abs(speed), angular_z=0.0)
+      self.set_velocity(linear_x=-abs(speed), angular_z=0.01)
       rate.sleep()
     self.stop()

@@ -25,6 +25,7 @@ from robot_config import API, API_KEY, POLL_SECONDS
 from robot_base import LimoBase
 from armFunctions import grabRight, grabLeft, placeInBox 
 
+
 rospy.init_node("limo_pickup_sequence", anonymous=True)
 
 base = LimoBase()
@@ -32,30 +33,36 @@ base = LimoBase()
 HEADERS = {"X-API-Key": API_KEY}
 TIMEOUT = 10  # seconds
 
-
+mc = MyCobot280("/dev/ttyACM0",115200)
 # ---------------------------------------------------------------------------
 # Hardware placeholders: replace the prints with real movement code later
 # ---------------------------------------------------------------------------
-def drive_to_box1():
+def drive_to_box1():   
     print("    [robot] driving to box1")
-    base.drive_forward(.5)
+    mc.send_angles([0,0,0,0,0,0,], 50)
+    time.sleep(2)
+    base.drive_forward(.68)
     arm_pick_left()
-    base.drive_backward(.5)
+    base.drive_backward(.68)
     dropoff()
 
 
 def drive_to_box2():
     print("    [robot] driving to box2")
-    base.drive_forward(1)
+    mc.send_angles([0,0,0,0,0,0,], 50)
+    time.sleep(2)
+    base.drive_forward(1.15)
     arm_pick_right()
-    base.drive_backward(1)
+    base.drive_backward(1.15)
     dropoff()
 
 def drive_to_box3():
     print("    [robot] driving to box3")
-    base.drive_forward(1.75)
+    mc.send_angles([0,0,0,0,0,0,], 50)
+    time.sleep(2)
+    base.drive_forward(1.90)
     arm_pick_left()
-    base.drive_backward(1.75)
+    base.drive_backward(1.90)
     dropoff()
 
 

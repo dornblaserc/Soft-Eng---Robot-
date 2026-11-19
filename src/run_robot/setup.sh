@@ -36,4 +36,4 @@ done
 echo "Camera driver active."
 
 # echo "[4/4] Running execution sequence..."
-python3 -u "robot.py"
+python3 -u "src/Tests/in_progress/main.py"
