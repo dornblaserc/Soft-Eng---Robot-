@@ -16,9 +16,12 @@ import sys
 import time
 
 import requests
+from geometry_msgs.msg import Twist
+import rospy
 
 from robot_config import API, API_KEY, POLL_SECONDS
 
+<<<<<<< HEAD
 import subprocess
 
 # Runs the script and waits for it to finish
@@ -27,6 +30,11 @@ result = subprocess.run(["bash", "src/Tests/in_progress/setup.sh"], capture_outp
 print("Output:", result.stdout)
 print("Errors:", result.stderr)
 
+=======
+from robot_base import LimoBase
+
+base = LimoBase()
+>>>>>>> 3dff403 (trying to move robot with orders)
 HEADERS = {"X-API-Key": API_KEY}
 TIMEOUT = 10  # seconds
 
@@ -36,14 +44,18 @@ TIMEOUT = 10  # seconds
 # ---------------------------------------------------------------------------
 def drive_to_box1():
     print("    [robot] driving to box1")
+    base.drive_forward(.5)
+    
 
 
 def drive_to_box2():
     print("    [robot] driving to box2")
+    base.drive_forward(1)
 
 
 def drive_to_box3():
     print("    [robot] driving to box3")
+    base.drive_forward(1.5)
 
 
 def arm_pick():
