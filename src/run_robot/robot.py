@@ -23,8 +23,8 @@ import time
 
 from robot_config import API, API_KEY, POLL_SECONDS
 from robot_base import LimoBase
-from grabright import grabRight
-from grableft import grabLeft
+from armFunctions import grabRight, grabLeft, placeInBox 
+
 rospy.init_node("limo_pickup_sequence", anonymous=True)
 
 base = LimoBase()
@@ -41,6 +41,7 @@ def drive_to_box1():
     base.drive_forward(.5)
     arm_pick_left()
     base.drive_backward(.5)
+    dropoff()
 
 
 def drive_to_box2():
@@ -48,12 +49,14 @@ def drive_to_box2():
     base.drive_forward(1)
     arm_pick_right()
     base.drive_backward(1)
+    dropoff()
 
 def drive_to_box3():
     print("    [robot] driving to box3")
     base.drive_forward(1.75)
     arm_pick_left()
     base.drive_backward(1.75)
+    dropoff()
 
 
 def arm_pick_right():
@@ -65,8 +68,9 @@ def arm_pick_left():
     grabLeft()
 
 
-def drive_to_dropoff():
-    print("    [robot] driving to drop-off point")
+def dropoff():
+    print("    dropping item off")
+    placeInBox()
     
 
 
