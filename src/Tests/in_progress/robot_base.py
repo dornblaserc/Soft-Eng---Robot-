@@ -38,3 +38,14 @@ class LimoBase:
       self.set_velocity(linear_x=speed, angular_z=0.0)
       rate.sleep()
     self.stop()
+
+  def drive_backward(self, distance, speed=0.1):
+    """Drives straight backward for a fixed distance in meters."""
+    
+    duration = abs(distance)/abs(speed)
+    end_time = rospy.Time.now() + rospy.Duration(duration)
+    rate = rospy.Rate(20)
+    while not rospy.is_shutdown() and rospy.Time.now() < end_time:
+      self.set_velocity(linear_x=-abs(speed), angular_z=0.0)
+      rate.sleep()
+    self.stop()
