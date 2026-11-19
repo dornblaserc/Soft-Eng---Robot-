@@ -1,11 +1,11 @@
 """
 File: main.py
 Description:
-  Closed-loop visual servoing and ball-picking sequence for the AgileX LIMO:
-    1. Folds the MyCobot 280 arm out of the camera's field of view.
-    2. Tracks the target ball in a live resizable window, steering and driving
-       toward it until it reaches pickup range without hitting it.
-    3. Locks final 3D coordinates, picks the ball, and places it in the box.
+  Two-stage visual servoing and blind final roll-in for the AgileX LIMO:
+    1. Steers and drives toward the ball while it is in the camera's vertical FOV.
+    2. Once the ball reaches the lower FOV handoff distance (36 cm), locks its 3D
+       position and drives straight forward the remaining distance to pickup range.
+    3. Picks the ball with the MyCobot 280 and places it in the left box.
 """
 
 import math
@@ -18,53 +18,53 @@ from vision_detector import BallDetector
 # Physical mounting offset (dx, dy, dz) in mm from MyCobot base to camera lens
 CAM_TO_ARM_OFFSET_MM = (80.0, 0.0, -45.0)
 
-# Approach tuning parameters
-STOP_DISTANCE_MM = 160.0   # Stop 16 cm from camera (~24 cm from arm base)
-MAX_LINEAR_SPEED = 0.16    # m/s when far from target
-MIN_LINEAR_SPEED = 0.07    # m/s when close to target
-KP_ANGULAR = 1.6           # Steering proportional gain
-MAX_ANGULAR_SPEED = 0.65   # rad/s steering clamp
-LOST_TARGET_TIMEOUT = 0.6  # Seconds to hold still if ball briefly drops out
+# Approach and handoff tuning parameters
+HANDOFF_DISTANCE_MM = 360.0  # Distance (mm) before ball exits bottom of camera FOV
+STOP_DISTANCE_MM = 160.0     # Final pickup distance (mm) from camera lens
+MAX_LINEAR_SPEED = 0.16      # m/s when far from target
+MIN_LINEAR_SPEED = 0.07      # m/s when close to target
+KP_ANGULAR = 1.6             # Steering proportional gain
+MAX_ANGULAR_SPEED = 0.65     # rad/s steering clamp
+LOST_TARGET_TIMEOUT = 0.5    # Seconds to wait before assuming ball exited bottom FOV
+
+
+def cam_to_arm_coords(x_cam, y_cam, z_cam):
+  ox, oy, oz = CAM_TO_ARM_OFFSET_MM
+  return (z_cam + ox, -x_cam + oy, -y_cam + oz)
 
 
 def approach_and_lock_target(base, detector):
-  """Steers and drives the LIMO up to the ball, stopping at pickup distance."""
+  """Steers up to the handoff line, then drives the remaining blind distance."""
   window_name = "LIMO Camera Feed (Resizable)"
   cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
   cv2.resizeWindow(window_name, 800, 600)
 
   rate = rospy.Rate(20)
+  last_valid_cam = None
   last_seen_time = None
-  locked_arm_coords = None
+  handoff_cam = None
 
   while not rospy.is_shutdown():
     cam_coords = detector.latest_target_cam_mm
-    arm_coords = detector.get_target_arm_coords(CAM_TO_ARM_OFFSET_MM)
     now = rospy.Time.now()
 
-    linear_x = 0.0
-    angular_z = 0.0
-
-    if cam_coords is not None and arm_coords is not None:
+    if cam_coords is not None:
+      x_cam, y_cam, z_cam = cam_coords
+      last_valid_cam = (x_cam, y_cam, z_cam)
       last_seen_time = now
-      x_cam, _, z_cam = cam_coords
 
-      # Bearing angle: +angle = ball is left (+angular.z), -angle = right (-angular.z)
       angle_rad = math.atan2(-x_cam, z_cam)
       angular_z = max(-MAX_ANGULAR_SPEED, min(MAX_ANGULAR_SPEED, KP_ANGULAR * angle_rad))
 
-      if z_cam <= STOP_DISTANCE_MM and abs(angle_rad) < 0.20:
-        # Close enough and centered—stop and settle chassis before picking
+      if z_cam <= HANDOFF_DISTANCE_MM and abs(angle_rad) < 0.20:
         base.stop()
-        rospy.sleep(0.5)
-        locked_arm_coords = detector.get_target_arm_coords(CAM_TO_ARM_OFFSET_MM) or arm_coords
-        status = f"[{detector.color_name.upper()}] LOCKED at {z_cam / 10.0:.1f}cm - Picking!"
+        handoff_cam = (x_cam, y_cam, z_cam)
+        status = f"[{detector.color_name.upper()}] Handoff at {z_cam / 10.0:.1f}cm - Rolling in..."
       else:
-        # Slow down if turning sharply or getting close to the ball
         turn_scale = max(0.25, 1.0 - (abs(angle_rad) / 0.7))
-        dist_scale = min(1.0, max(0.0, (z_cam - STOP_DISTANCE_MM) / 350.0))
+        dist_scale = min(1.0, max(0.0, (z_cam - HANDOFF_DISTANCE_MM) / 350.0))
         raw_speed = MIN_LINEAR_SPEED + (MAX_LINEAR_SPEED - MIN_LINEAR_SPEED) * dist_scale
-        linear_x = raw_speed * turn_scale if z_cam > STOP_DISTANCE_MM else 0.0
+        linear_x = raw_speed * turn_scale if z_cam > HANDOFF_DISTANCE_MM else 0.0
 
         base.set_velocity(linear_x=linear_x, angular_z=angular_z)
         status = (
@@ -73,8 +73,15 @@ def approach_and_lock_target(base, detector):
         )
     else:
       base.stop()
-      if last_seen_time is not None and (now - last_seen_time).to_sec() < LOST_TARGET_TIMEOUT:
-        status = f"[{detector.color_name.upper()}] Re-acquiring..."
+      # If the ball was close and centered right before dropping below the FOV, finish roll-in
+      if (
+          last_valid_cam is not None
+          and last_valid_cam[2] < 500.0
+          and last_seen_time is not None
+          and (now - last_seen_time).to_sec() >= LOST_TARGET_TIMEOUT
+      ):
+        handoff_cam = last_valid_cam
+        status = f"[{detector.color_name.upper()}] Exited bottom FOV - Rolling in..."
       else:
         status = f"[{detector.color_name.upper()}] Searching for ball..."
 
@@ -107,13 +114,24 @@ def approach_and_lock_target(base, detector):
     elif key == ord("g"):
       detector.set_color("green")
 
-    if locked_arm_coords is not None:
+    if handoff_cam is not None:
       break
 
     rate.sleep()
 
   base.stop()
-  return locked_arm_coords
+  if handoff_cam is None:
+    return None
+
+  # Drive straight forward the remaining distance after the ball exits the camera FOV
+  hx, hy, hz = handoff_cam
+  remaining_mm = max(0.0, hz - STOP_DISTANCE_MM)
+  rospy.loginfo(f"Driving final {remaining_mm / 10.0:.1f} cm to pickup position...")
+  base.drive_forward(distance=remaining_mm / 1000.0, speed=0.08)
+  rospy.sleep(0.4)
+
+  final_z_cam = hz - remaining_mm
+  return cam_to_arm_coords(hx, hy, final_z_cam)
 
 
 def main():
