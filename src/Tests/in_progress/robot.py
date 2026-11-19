@@ -40,7 +40,7 @@ def drive_to_box1():
     print("    [robot] driving to box1")
     base.drive_forward(.5)
     arm_pick_right()
-    base.drive_backward()
+    base.drive_backward(.5)
 
 
 def drive_to_box2():
