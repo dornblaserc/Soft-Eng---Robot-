@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """File: vision_detector.py
 Description:
-  Detects ping pong balls in a bin using a YOLO instance segmentation model and
-  an Orbbec DaBai RGB-D depth camera.
+  Detects ping pong balls using OpenCV HSV color segmentation, contour circularity
+  filtering, and Orbbec DaBai RGB-D depth de-projection.
 
-  How 3D localization works in this module:
-    1. Camera Intrinsics: Reads lens focal lengths (fx, fy) and optical center (cx, cy).
-    2. Synchronization: Pairs each RGB color frame with its matching depth frame.
-    3. 2D Detection: Runs YOLO segmentation on the RGB frame to find the pixel center
-       (u, v) of each ball matching the target class ID.
-    4. Depth Lookup: Reads the distance Z (in millimeters) from the depth image at (u, v).
-    5. 3D De-projection: Converts 2D pixel (u, v) + depth Z into 3D Camera Coordinates.
-    6. Frame Transformation: Converts 3D Camera Coordinates into 3D MyCobot Arm Coordinates.
+  Can be imported by main.py OR run directly by itself to test the camera live:
+    python3 src/Tests/in_progress/vision_detector.py
+    
+  Can be ran on its own with: 
+  source /opt/ros/noetic/setup.bash && source /home/agilex/agilex_ws/devel/setup.bash
+  roslaunch astra_camera dabai_u3.launch > /dev/null 2>&1 &
+  sleep 4
+  python3 src/Tests/in_progress/vision_detector.py
+  
+  OR
+  
+  Changing the python3 call in setup.sh
 """
 
 import cv2
@@ -20,24 +24,43 @@ import message_filters
 import numpy as np
 import rospy
 from sensor_msgs.msg import CameraInfo, Image
-from ultralytics import YOLO
 
 
 class BallDetector:
-  """Subscribes to RGB-D camera streams and computes 3D pick coordinates for the topmost ball."""
+  """Detects spherical ping pong balls via HSV color + circularity + RGB-D depth."""
 
-  def __init__(self, model_path="/home/agilex/limo_ros2_ws/src/Soft-Eng---Robot-/best.pt", target_class_id=0):
+  # Preset HSV ranges: (Lower_H, Lower_S, Lower_V), (Upper_H, Upper_S, Upper_V)
+  COLOR_PRESETS = {
+      "orange": ((5, 110, 100), (22, 255, 255)),
+      "yellow": ((20, 90, 100), (35, 255, 255)),
+      "white": ((0, 0, 185), (180, 45, 255)),
+      "green": ((36, 80, 70), (85, 255, 255)),
+      "blue": ((95, 100, 70), (130, 255, 255)),
+  }
+
+  def __init__(self, model_path=None, target_class_id=0, color="orange"):
+    """Initializes the HSV + Depth ball detector and ROS 1 camera subscribers.
+
+    Note: model_path and target_class_id are kept as optional parameters so existing
+    calls in main.py do not break.
+    """
     self.bridge = CvBridge()
-    self.model = YOLO(model_path)
-    self.target_class_id = target_class_id
+    self.color_name = color if color in self.COLOR_PRESETS else "orange"
+    self.hsv_lower, self.hsv_upper = self.COLOR_PRESETS[self.color_name]
 
-    self.intrinsics = None
-    self.latest_target_cam_mm = None
+    self.intrinsics = None            # (fx, fy, cx, cy)
+    self.latest_target_cam_mm = None  # (X_cam, Y_cam, Z_cam) in mm
+    self.latest_annotated_frame = None
 
-    # Auto-detect whether the driver publishes to /camera/color or /camera/rgb
+    # Auto-detect whether the Orbbec driver publishes to /camera/color or /camera/rgb
     published = [t[0] for t in rospy.get_published_topics()]
     cam_ns = "/camera/color" if "/camera/color/image_raw" in published else "/camera/rgb"
 
+    self.info_sub = rospy.Subscriber(
+        f"{cam_ns}/camera_info", CameraInfo, self._info_cb
+    )
+    self.color_sub = message_filters.Subscriber(f"{cam_ns}/image_raw", Image)
+    self.depth_sub = message_filters.Subscriber("/camera/depth/image_raw", Image)
     self.info_sub = rospy.Subscriber(
         f"{cam_ns}/camera_info", CameraInfo, self._info_cb
     )
@@ -48,128 +71,178 @@ class BallDetector:
         [self.color_sub, self.depth_sub], queue_size=10, slop=0.05
     )
     self.ts.registerCallback(self._synced_cb)
+    self.ts = message_filters.ApproximateTimeSynchronizer(
+        [self.color_sub, self.depth_sub], queue_size=10, slop=0.05
+    )
+    self.ts.registerCallback(self._synced_cb)
+
+  def set_color(self, color_name):
+    """Switches the active ping pong ball HSV color preset."""
+    if color_name in self.COLOR_PRESETS:
+      self.color_name = color_name
+      self.hsv_lower, self.hsv_upper = self.COLOR_PRESETS[color_name]
+      rospy.loginfo(f"Switched ball detection color to: {color_name}")
 
   def _info_cb(self, msg):
-    """Extracts lens focal lengths and optical center from the 3x3 intrinsic matrix K.
-
-    The flattened 9-element matrix K in CameraInfo is structured as:
-      [ fx,  0, cx,
-         0, fy, cy,
-         0,  0,  1 ]
-    """
+    """Stores the camera lens focal lengths (fx, fy) and optical center (cx, cy)."""
     if self.intrinsics is None:
-      fx = msg.K[0]  # Horizontal focal length in pixels
-      cx = msg.K[2]  # Horizontal optical center in pixels
-      fy = msg.K[4]  # Vertical focal length in pixels
-      cy = msg.K[5]  # Vertical optical center in pixels
-      self.intrinsics = (fx, fy, cx, cy)
-      # Unregister after receiving once since lens intrinsics never change
+      self.intrinsics = (msg.K[0], msg.K[4], msg.K[2], msg.K[5])
       self.info_sub.unregister()
 
   def _synced_cb(self, color_msg, depth_msg):
-    """Callback triggered whenever a matched pair of RGB and Depth frames arrives."""
+    """Processes synchronized RGB and Depth frames to locate the topmost ball."""
     if self.intrinsics is None:
       return
 
-    # Convert ROS image messages into standard OpenCV matrices
     color_frame = self.bridge.imgmsg_to_cv2(color_msg, desired_encoding="bgr8")
     depth_frame = self.bridge.imgmsg_to_cv2(depth_msg, desired_encoding="passthrough")
+    display_frame = color_frame.copy()
 
-    # Run neural network inference on the RGB image (minimum confidence 60%)
-    results = self.model(color_frame, verbose=False, conf=0.6)[0]
-    if results.boxes is None or len(results.boxes) == 0:
-      self.latest_target_cam_mm = None
-      return
+    # 1. Blur slightly and convert BGR image to HSV color space
+    blurred = cv2.GaussianBlur(color_frame, (7, 7), 0)
+    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
+    # 2. Threshold for the target ball color and clean up noise with morphological ops
+    mask = cv2.inRange(hsv, np.array(self.hsv_lower), np.array(self.hsv_upper))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    # 3. Find external contours in the binary color mask
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     fx, fy, cx, cy = self.intrinsics
-    best_target = None  # Holds (X, Y, Z) of the ball closest to the camera
+    best_target = None
+    h, w = depth_frame.shape[:2]
 
-    for i, box in enumerate(results.boxes):
-      # Ignore balls that do not match the requested color class ID
-      if int(box.cls[0]) != self.target_class_id:
+    for cnt in contours:
+      area = cv2.contourArea(cnt)
+      if area < 150:  # Ignore tiny background speckles
         continue
 
-      # Find the 2D pixel center (u, v) of the ball.
-      # Prefer the segmentation mask centroid (accurate even if balls touch),
-      # falling back to the bounding box center if masks are unavailable.
-      if results.masks is not None:
-        mask_pts = results.masks.xy[i]
-        if len(mask_pts) == 0:
-          continue
-        u = int(np.mean(mask_pts[:, 0]))
-        v = int(np.mean(mask_pts[:, 1]))
-      else:
-        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-        u = int((x1 + x2) / 2)
-        v = int((y1 + y2) / 2)
+      perimeter = cv2.arcLength(cnt, True)
+      if perimeter == 0:
+        continue
 
-      # Verify pixel (u, v) lies inside the image boundaries
-      h, w = depth_frame.shape[:2]
+      # Circularity = 1.0 for a perfect circle; reject non-round shapes (< 0.60)
+      circularity = (4.0 * np.pi * area) / (perimeter * perimeter)
+      if circularity < 0.60:
+        continue
+
+      bx, by, bw, bh = cv2.boundingRect(cnt)
+      aspect_ratio = float(bw) / float(bh)
+      if not (0.65 <= aspect_ratio <= 1.45):
+        continue
+
+      # Center pixel (u, v) of the ball
+      u = bx + bw // 2
+      v = by + bh // 2
+
+      # Draw blue bounding box (BGR: 255, 0, 0) and center dot
+      cv2.rectangle(display_frame, (bx, by), (bx + bw, by + bh), (255, 0, 0), 2)
+      cv2.circle(display_frame, (u, v), 4, (255, 0, 0), -1)
+
       if not (0 <= u < w and 0 <= v < h):
         continue
 
-      # Extract a 3x3 pixel window around (u, v) from the depth image.
-      # Taking the median of non-zero pixels prevents a single dead depth pixel
-      # from ruining the distance reading.
-      patch = depth_frame[max(0, v - 1) : min(h, v + 2), max(0, u - 1) : min(w, u + 2)]
+      # Read median depth in a 5x5 window around the ball center
+      patch = depth_frame[max(0, v - 2):min(h, v + 3), max(0, u - 2):min(w, u + 3)]
       valid = patch[patch > 0]
       if len(valid) == 0:
+        # Ball is detected in 2D, but too close (<15cm) for the depth sensor
+        cv2.putText(
+            display_frame,
+            "No Depth (<15cm?)",
+            (bx, max(20, by - 8)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (255, 0, 0),
+            2,
+        )
         continue
 
       raw_depth = float(np.median(valid))
-
-      # Standardize depth Z into millimeters:
-      # '16UC1' depth images are already in mm; '32FC1' depth images are in meters.
       z_mm = raw_depth * 1000.0 if depth_msg.encoding == "32FC1" else raw_depth
-
-      # Reject noisy depth readings closer than 10 cm or farther than 60 cm
-      if z_mm < 100.0 or z_mm > 600.0:
+      if z_mm < 100.0 or z_mm > 700.0:
         continue
 
-      # Pinhole Camera De-projection Math:
-      # Converts 2D pixel (u, v) and depth (z_mm) into 3D Camera Optical Coordinates (mm).
-      # In the standard ROS Camera Optical Frame:
-      #   +Z points straight out of the lens (forward)
-      #   +X points to the right of the image
-      #   +Y points down toward the floor
+      # De-project 2D pixel + depth into 3D camera optical coordinates (mm)
       x_mm = (u - cx) * z_mm / fx
       y_mm = (v - cy) * z_mm / fy
 
-      # Bin-Picking Priority:
-      # Keep the ball with the smallest Z distance (closest to the camera / top of the pile)
+      cv2.putText(
+          display_frame,
+          f"X:{int(x_mm)} Y:{int(y_mm)} Z:{int(z_mm)}mm",
+          (bx, max(20, by - 8)),
+          cv2.FONT_HERSHEY_SIMPLEX,
+          0.5,
+          (255, 0, 0),
+          2,
+      )
+
       if best_target is None or z_mm < best_target[2]:
         best_target = (x_mm, y_mm, z_mm)
 
     self.latest_target_cam_mm = best_target
+    self.latest_annotated_frame = display_frame
 
   def get_target_arm_coords(self, cam_to_arm_offset_mm=(80.0, 0.0, -45.0)):
-    """Converts 3D Camera Optical coordinates into 3D MyCobot Base coordinates.
-
-    Coordinate Axis Mapping:
-      - Camera Optical Frame: +Z = Forward, +X = Right, +Y = Down
-      - MyCobot Base Frame:   +X = Forward, +Y = Left,  +Z = Up
-
-    Therefore:
-      - Arm Forward (+X_arm) corresponds to Camera Depth (+Z_cam)
-      - Arm Left    (+Y_arm) corresponds to negative Camera Right (-X_cam)
-      - Arm Up      (+Z_arm) corresponds to negative Camera Down (-Y_cam)
-
-    Args:
-      cam_to_arm_offset_mm (tuple): Physical (dx, dy, dz) mounting position of the
-        camera lens measured from the center of the MyCobot base in millimeters.
-
-    Returns:
-      tuple: (x_arm, y_arm, z_arm) in millimeters ready for MyCobot send_coords(),
-             or None if no ball is currently detected.
-    """
+    """Transforms 3D camera coordinates (mm) into MyCobot base coordinates (mm)."""
     if self.latest_target_cam_mm is None:
       return None
 
     x_cam, y_cam, z_cam = self.latest_target_cam_mm
     ox, oy, oz = cam_to_arm_offset_mm
+    return (z_cam + ox, -x_cam + oy, -y_cam + oz)
 
-    x_arm = z_cam + ox
-    y_arm = -x_cam + oy
-    z_arm = -y_cam + oz
 
-    return x_arm, y_arm, z_arm
+# ==============================================================================
+# Standalone Live Testing Mode
+# ==============================================================================
+if __name__ == "__main__":
+  rospy.init_node("vision_detector_standalone", anonymous=True)
+  detector = BallDetector(color="orange")
+
+  window_name = "LIMO Ball Detector (Resizable)"
+  cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+  cv2.resizeWindow(window_name, 800, 600)
+
+  print("==========================================================")
+  print("Live Camera Feed Started!")
+  print("  Press 'o' = Orange | 'w' = White | 'y' = Yellow | 'g' = Green")
+  print("  Press 'q' or ESC inside the camera window to quit.")
+  print("==========================================================")
+
+  rate = rospy.Rate(30)
+  while not rospy.is_shutdown():
+    if detector.latest_annotated_frame is not None:
+      frame = detector.latest_annotated_frame.copy()
+      arm_coords = detector.get_target_arm_coords()
+
+      # Show status banner at top of window
+      status = f"Color: {detector.color_name.upper()} | "
+      if arm_coords is not None:
+        status += f"Arm Target: X={arm_coords[0]:.0f} Y={arm_coords[1]:.0f} Z={arm_coords[2]:.0f} mm"
+      else:
+        status += "Searching for ball..."
+
+      cv2.putText(frame, status, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
+      cv2.imshow(window_name, frame)
+
+    key = cv2.waitKey(1) & 0xFF
+    if key in (ord("q"), 27):
+      break
+    elif key == ord("o"):
+      detector.set_color("orange")
+    elif key == ord("w"):
+      detector.set_color("white")
+    elif key == ord("y"):
+      detector.set_color("yellow")
+    elif key == ord("g"):
+      detector.set_color("green")
+    elif key == ord("b"):
+      detector.set_color("blue")
+
+    rate.sleep()
+
+  cv2.destroyAllWindows()
