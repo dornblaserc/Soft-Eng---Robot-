@@ -1,12 +1,7 @@
 """
 File: main.py
 Description:
-  Main execution entry point for the AgileX LIMO autonomous ball-picking sequence.
-  Coordinates the mobile base, HSV + RGB-D vision detector, and MyCobot 280 arm:
-    Step 1: Folds the arm out of the camera's field of view.
-    Step 2: Drives the LIMO forward to the ball bin.
-    Step 3: Displays a resizable live camera feed and locks the topmost ball's 3D coordinates.
-    Step 4: Commands the arm to pick the ball via Inverse Kinematics and place it in a box.
+  Main execution sequence for the AgileX LIMO autonomous ball-picking task.
 """
 
 from arm_controller import ArmController
@@ -15,27 +10,12 @@ from robot_base import LimoBase
 import rospy
 from vision_detector import BallDetector
 
-# Physical mounting offset (dx, dy, dz) in millimeters from the center of the
-# MyCobot base to the Orbbec camera lens:
-#   dx (+X): How many mm the camera lens sits in front of the arm base center
-#   dy (+Y): How many mm the camera lens sits left/right of the arm centerline
-#   dz (+Z): How many mm the camera lens sits above/below the arm base
+# Physical mounting offset (dx, dy, dz) in mm from MyCobot base to camera lens
 CAM_TO_ARM_OFFSET_MM = (80.0, 0.0, -45.0)
 
 
 def wait_for_target(detector, auto_pick=False, timeout=5.0):
-  """Displays a resizable live feed and returns locked 3D arm coordinates.
-
-  Args:
-    detector (BallDetector): Initialized HSV + RGB-D detector instance.
-    auto_pick (bool): If True, locks the first valid detection within `timeout`.
-      If False, keeps the window open until Space is pressed to pick or 'q' to quit.
-    timeout (float): Maximum seconds to wait when `auto_pick=True`.
-
-  Returns:
-    tuple: (x_mm, y_mm, z_mm) target coordinates in the arm base frame, or None.
-  """
-  window_name = "LIMO Camera Feed"
+  window_name = "LIMO Camera Feed (Resizable)"
   cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
   cv2.resizeWindow(window_name, 800, 600)
 
@@ -53,27 +33,24 @@ def wait_for_target(detector, auto_pick=False, timeout=5.0):
       frame = detector.latest_annotated_frame.copy()
 
       if coords is not None:
+        dist_cm = detector.latest_target_cam_mm[2] / 10.0
         status = (
-            f"[{detector.color_name.upper()}] Arm Target: "
-            f"X={coords[0]:.0f} Y={coords[1]:.0f} Z={coords[2]:.0f}mm"
+            f"[{detector.color_name.upper()}] Dist: {dist_cm:.1f}cm | "
+            f"Arm: X={coords[0]:.0f} Y={coords[1]:.0f} Z={coords[2]:.0f}mm"
         )
-        hint = "Press SPACE to pick | 'q' to abort"
+        hint = "SPACE to pick | 'q' to quit"
       else:
-        status = f"[{detector.color_name.upper()}] Searching for ball..."
-        hint = "Move ball into view | 'q' to abort"
+        status = f"[{detector.color_name.upper()}] Searching..."
+        hint = "Move ball into view | 'q' to quit"
 
-      cv2.putText(
-          frame, status, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2
-      )
+      cv2.putText(frame, status, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
       if not auto_pick:
-        cv2.putText(
-            frame, hint, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 0, 0), 2
-        )
+        cv2.putText(frame, hint, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 0, 0), 2)
 
       cv2.imshow(window_name, frame)
 
     key = cv2.waitKey(1) & 0xFF
-    if key in (ord("q"), 27):  # 'q' or ESC aborts
+    if key in (ord("q"), 27):
       locked_coords = None
       break
     elif key == ord("b"):
@@ -101,37 +78,25 @@ def wait_for_target(detector, auto_pick=False, timeout=5.0):
 
 
 def main():
-  # Initialize the ROS 1 node for this process
   rospy.init_node("limo_pickup_sequence", anonymous=True)
 
-  # Instantiate hardware controllers and the HSV + RGB-D vision pipeline
   base = LimoBase()
   arm = ArmController(port="/dev/ttyACM0")
   detector = BallDetector(color="blue")
 
-  # 1. Tuck the arm so it does not obstruct the depth camera while approaching
- 
-  rospy.loginfo("Loading YOLO Model...")
-  script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  model_file = os.path.join(script_dir,"/home/agilex/limo_ros2_ws/src/Soft-Eng---Robot-/best.pt")
   rospy.loginfo("Folding arm into safe transit pose...")
-  detector = BallDetector(model_path=model_file, target_class_id=0)
   arm.reset_and_tuck()
 
-  # 2. Drive the LIMO forward to the bin
-  target_distance = 0.3  # meters
-  drive_speed = 0.1      # meters per second
+  target_distance = 0.3
+  drive_speed = 0.1
   rospy.loginfo(f"Driving {target_distance}m at {drive_speed} m/s...")
   base.drive_forward(distance=target_distance, speed=drive_speed)
 
-  # 3. Locate the topmost target ball in 3D space (live resizable window)
-  rospy.loginfo(
-      "Camera preview open. Position ball and press SPACE to pick (or 'q' to quit)."
-  )
+  rospy.loginfo("Camera preview open. Press SPACE to pick or 'q' to quit.")
   target_xyz = wait_for_target(detector, auto_pick=False, timeout=5.0)
 
   if target_xyz is None:
-    rospy.logerr("No valid ball locked within depth range. Aborting pick.")
+    rospy.logerr("No valid ball locked. Aborting pick.")
     return
 
   x_mm, y_mm, z_mm = target_xyz
@@ -139,7 +104,6 @@ def main():
       f"Picking ball at arm coords: X={x_mm:.1f}mm, Y={y_mm:.1f}mm, Z={z_mm:.1f}mm"
   )
 
-  # 4. Execute Inverse Kinematics pick and deposit into the left collection box
   arm.pick_at_xyz(x_mm, y_mm, z_mm)
   arm.place_in_box(side="left")
   rospy.loginfo("Sequence completed.")

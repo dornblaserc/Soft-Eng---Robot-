@@ -27,7 +27,7 @@ until rostopic list 2>/dev/null | grep -q "/cmd_vel"; do
 done
 echo "Base driver active."
 
-echo "[3/4] Launching Orbbec DaBai depth camera..."
+echo "[3/4] Launching Orbbec DaBai camera..."
 roslaunch astra_camera dabai_u3.launch > /dev/null 2>&1 &
 
 until rostopic list 2>/dev/null | grep -Eq "/camera/(rgb|color)/image_raw"; do
@@ -36,4 +36,4 @@ done
 echo "Camera driver active."
 
 echo "[4/4] Running execution sequence..."
-YOLO_OFFLINE=1 python3 -u "$SCRIPT_DIR/main.py"
+python3 -u "$SCRIPT_DIR/main.py"
