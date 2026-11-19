@@ -39,18 +39,21 @@ TIMEOUT = 10  # seconds
 def drive_to_box1():
     print("    [robot] driving to box1")
     base.drive_forward(.5)
-    arm_pick_right()
-    base.drive_backward()
+    arm_pick_left()
+    base.drive_backward(.5)
 
 
 def drive_to_box2():
     print("    [robot] driving to box2")
-    # base.drive_forward(1)
-    arm_pick_left()
+    base.drive_forward(1)
+    arm_pick_right()
+    base.drive_backward(1)
 
 def drive_to_box3():
     print("    [robot] driving to box3")
-    base.drive_forward(1.5)
+    base.drive_forward(1.75)
+    arm_pick_left()
+    base.drive_backward(1.75)
 
 
 def arm_pick_right():
