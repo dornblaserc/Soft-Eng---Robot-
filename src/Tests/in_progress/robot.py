@@ -38,8 +38,9 @@ TIMEOUT = 10  # seconds
 # ---------------------------------------------------------------------------
 def drive_to_box1():
     print("    [robot] driving to box1")
-    # base.drive_forward(.5)
+    base.drive_forward(.5)
     arm_pick_right()
+    base.drive_backward()
 
 
 def drive_to_box2():
@@ -83,8 +84,6 @@ def handle_item(item):
 
     print("  Item %s at %s (note: %s)" % (item["productID"], location, item.get("instruction")))
     move()
-    arm_pick()
-    drive_to_dropoff()
 
 
 # ---------------------------------------------------------------------------
