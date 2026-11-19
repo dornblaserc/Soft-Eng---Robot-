@@ -1,8 +1,8 @@
 from pymycobot import MyCobot280
 import time
 
-def start_grab(port="/dev/ttyACM0", baudrate=115200):
-        mc = MyCobot280(port, baudrate)
+def grabLeft():
+        mc = MyCobot280("/dev/ttyACM0",115200)
         #^ sets arm to ms variable
         #dev/#### will have the # be different for each arm
         mc.power_on() #activates arm

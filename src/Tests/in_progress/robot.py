@@ -18,10 +18,13 @@ import time
 import requests
 from geometry_msgs.msg import Twist
 import rospy
+from pymycobot import MyCobot280
+import time
 
 from robot_config import API, API_KEY, POLL_SECONDS
-
 from robot_base import LimoBase
+from grabright import grabRight
+from grableft import grabLeft
 rospy.init_node("limo_pickup_sequence", anonymous=True)
 
 base = LimoBase()
@@ -35,22 +38,27 @@ TIMEOUT = 10  # seconds
 # ---------------------------------------------------------------------------
 def drive_to_box1():
     print("    [robot] driving to box1")
-    base.drive_forward(.5)
-    
+    # base.drive_forward(.5)
+    arm_pick_right()
 
 
 def drive_to_box2():
     print("    [robot] driving to box2")
-    base.drive_forward(1)
-
+    # base.drive_forward(1)
+    arm_pick_left()
 
 def drive_to_box3():
     print("    [robot] driving to box3")
     base.drive_forward(1.5)
 
 
-def arm_pick():
+def arm_pick_right():
     print("    [robot] arm: picking up item")
+    grabRight()
+
+def arm_pick_left():
+    print("    [robot] arm: picking up item")
+    grabLeft()
 
 
 def drive_to_dropoff():
